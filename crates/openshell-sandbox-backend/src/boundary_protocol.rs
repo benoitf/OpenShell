@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-pub const MAX_CONTROL_FRAME_BYTES: usize = 1024 * 1024;
+pub const MAX_CONTROL_FRAME_BYTES: usize = 2 * 1024 * 1024;
 pub const STREAM_STDIN: u8 = 0;
 pub const STREAM_STDOUT: u8 = 1;
 pub const STREAM_STDERR: u8 = 2;

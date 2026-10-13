@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! VM driver host bind mounts over virtiofs: a read-write share round-trips
-//! data with the host and a read-only share rejects writes.
+//! data with the host, accepts new files and directories, and a read-only
+//! share rejects writes.
 //!
-//! The sandbox overwrites a host-seeded file rather than creating one: on
-//! Linux, libkrun running as a non-root user refuses file creation by a guest
-//! user whose UID/GID differ from its own.
+//! On Linux, libkrun running as a non-root user refuses file creation by a
+//! guest user whose UID/GID differ from its own, so `e2e-vm.sh` sets the
+//! sandbox UID/GID to the gateway user's there.
 //!
 //! Needs the libkrun backend (macOS HVF or Linux KVM); QEMU rejects virtiofs
 //! mounts. The e2e VM gateway configures no GPU or QEMU-only lifecycle
@@ -70,6 +71,9 @@ async fn vm_bind_mount() {
          test \"$(cat {RW_TARGET}/input.txt)\" = host-bind-ok; \
          test \"$(cat {RO_TARGET}/input.txt)\" = host-bind-ok; \
          printf sandbox-bind-ok > {RW_TARGET}/output.txt; \
+         printf sandbox-created > {RW_TARGET}/created.txt; \
+         mkdir {RW_TARGET}/created-dir; \
+         printf sandbox-nested > {RW_TARGET}/created-dir/nested.txt; \
          if printf x > {RO_TARGET}/input.txt 2>/dev/null; then echo ro-writable; exit 1; fi; \
          echo vm-bind-ok"
     );
@@ -86,7 +90,7 @@ async fn vm_bind_mount() {
 
     assert!(
         sandbox.create_output.contains("vm-bind-ok"),
-        "sandbox should read both shares, write the rw share, and be denied on the ro share:\n{}",
+        "sandbox should read both shares, write and create in the rw share, and be denied on the ro share:\n{}",
         sandbox.create_output
     );
 
@@ -94,6 +98,16 @@ async fn vm_bind_mount() {
     let output = fs::read_to_string(rw_dir.path().join("output.txt"))
         .expect("read sandbox output from rw host dir");
     assert_eq!(output, "sandbox-bind-ok");
+    let created =
+        fs::read_to_string(rw_dir.path().join("created.txt")).expect("read sandbox-created file");
+    assert_eq!(created, "sandbox-created");
+    assert!(
+        rw_dir.path().join("created-dir").is_dir(),
+        "sandbox-created directory must exist on the host"
+    );
+    let nested = fs::read_to_string(rw_dir.path().join("created-dir/nested.txt"))
+        .expect("read file inside sandbox-created directory");
+    assert_eq!(nested, "sandbox-nested");
     // Overwriting an existing world-writable file is the write libkrun would
     // otherwise allow, so only the read-only share can be what refuses it.
     let ro_input =

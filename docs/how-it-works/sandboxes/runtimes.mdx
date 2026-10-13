@@ -241,7 +241,7 @@ openshell sandbox create \
 A sandbox takes at most 32 mounts on an arm64 gateway host and three on an x86_64 host. Single-file sources, sources that are symbolic links, `selinux_label`, and other mount types are not supported. VM mounts work only with the libkrun backend, so GPU sandboxes cannot use them.
 
 <Warning>
-VM mounts carry the same risk as [Docker bind mounts](#docker-mounts). The VM launcher serves each share as the gateway user, so `source` constrains the sandbox workload, not a compromised guest kernel. VM mounts require the same opt-in:
+VM bind mounts expose host files to sandbox workloads. Additionally, libkrun does not confine a compromised guest kernel to the configured source directory; it may access other host files permitted by the gateway user's permissions. VM mounts require the same opt-in as [Docker bind mounts](#docker-mounts):
 
 ```toml
 [openshell.drivers.vm]

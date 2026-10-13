@@ -1,0 +1,35 @@
+name: VM Bind Mount KVM
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - ci/vm-bind-mount-kvm
+
+permissions:
+  contents: read
+
+jobs:
+  vm-bind-mount:
+    name: ${{ matrix.task }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        task: ["e2e:vm", "e2e:vm:external-driver"]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MISE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-e2e-vm
+
+      - name: Run vm_bind_mount
+        env:
+          OPENSHELL_E2E_VM_TEST: vm_bind_mount
+          TASK: ${{ matrix.task }}
+        run: mise run "$TASK"

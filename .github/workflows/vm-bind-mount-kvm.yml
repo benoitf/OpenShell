@@ -28,6 +28,11 @@ jobs:
 
       - uses: ./.github/actions/setup-e2e-vm
 
+      # Upstream CI downloads prebuilt musl guest binaries; building them here
+      # needs the target, which rust-toolchain.toml does not list.
+      - name: Add musl target
+        run: rustup target add x86_64-unknown-linux-musl
+
       - name: Run vm_bind_mount
         env:
           OPENSHELL_E2E_VM_TEST: vm_bind_mount

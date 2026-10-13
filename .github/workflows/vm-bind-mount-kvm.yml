@@ -32,4 +32,5 @@ jobs:
         env:
           OPENSHELL_E2E_VM_TEST: vm_bind_mount
           TASK: ${{ matrix.task }}
-        run: mise run "$TASK"
+        # The prebuilt VM runtime release only exists upstream.
+        run: GITHUB_REPOSITORY=NVIDIA/OpenShell mise run "$TASK"
